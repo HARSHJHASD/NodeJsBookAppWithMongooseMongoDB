@@ -51,14 +51,30 @@ exports.PostSignUp = async (req, res, next) => {
 };
 
 exports.postLogin = (req, res, next) => {
-  User.findById("5bab316ce0a7c75f783cb8a8")
+  const { email } = req.body;
+  const { password } = req.body;
+  User.findOne({ email: email })
     .then((user) => {
-      req.session.isLoggedIn = true;
-      req.session.user = user;
-      req.session.save((err) => {
-        console.log(err);
-        res.redirect("/");
-      });
+      if (!user) {
+        return res.redirect("/login");
+      } else { 
+        bcrypt
+          .compare(password, user.password)
+          .then((isMatch) => {
+            if (isMatch) {
+              req.session.user = user;
+              req.session.isLoggedIn = true;
+              return req.session.save((err) => {
+                console.log(err); 
+                res.redirect("/");
+              });
+            }
+            return res.redirect("/login");
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
     })
     .catch((err) => console.log(err));
 };
